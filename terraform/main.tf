@@ -1,5 +1,5 @@
 terraform {
-  required_version = "~> 1.9.3"
+  required_version = "~> 1.10.2"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -8,7 +8,7 @@ terraform {
   }
   backend "azurerm" {
     resource_group_name  = "dev-terraform-state-rg"
-    storage_account_name = "devterraformstate"
+    storage_account_name = "devterraformstatehari"
     container_name       = "tfstate"
     key                  = "aks/terraform.tfstate"
   }
@@ -19,8 +19,9 @@ provider "azurerm" {
 }
 
 module "aks" {
-  source = "../module"
-
+  source = "./modules"  
+  azure-region          = var.azure-region  
+  
   env                   = var.env
   cluster-name          = "${local.env}-${local.org}-${var.cluster-name}"
   vnet-cidr-block       = var.vnet-cidr-block
@@ -39,18 +40,18 @@ module "aks" {
   nat-name              = "${local.env}-${local.org}-${var.nat-name}"
   aks-sg                = var.aks-sg
 
-  is-aks-cluster-enabled      = var.is-aks-cluster-enabled
-  cluster-version             = var.cluster-version
-  private-cluster-enabled     = var.private-cluster-enabled
-  public-network-access-enabled = var.public-network-access-enabled
-  system_node_pool_vm_size    = var.system_node_pool_vm_size
-  user_node_pool_vm_sizes     = var.user_node_pool_vm_sizes
-  system_node_pool_desired_count = var.system_node_pool_desired_count
-  system_node_pool_min_count  = var.system_node_pool_min_count
-  system_node_pool_max_count  = var.system_node_pool_max_count
-  user_node_pool_desired_count = var.user_node_pool_desired_count
-  user_node_pool_min_count    = var.user_node_pool_min_count
-  user_node_pool_max_count    = var.user_node_pool_max_count
+  is-aks-cluster-enabled          = var.is-aks-cluster-enabled
+  cluster-version                 = var.cluster-version
+  private-cluster-enabled         = var.private-cluster-enabled
+  public-network-access-enabled   = var.public-network-access-enabled
+  system_node_pool_vm_size        = var.system_node_pool_vm_size
+  user_node_pool_vm_sizes         = var.user_node_pool_vm_sizes
+  system_node_pool_desired_count  = var.system_node_pool_desired_count
+  system_node_pool_min_count      = var.system_node_pool_min_count
+  system_node_pool_max_count      = var.system_node_pool_max_count
+  user_node_pool_desired_count    = var.user_node_pool_desired_count
+  user_node_pool_min_count        = var.user_node_pool_min_count
+  user_node_pool_max_count        = var.user_node_pool_max_count
 
-  addons                      = var.addons
+  addons                          = var.addons
 }
