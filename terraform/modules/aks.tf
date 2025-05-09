@@ -56,6 +56,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
     log_analytics_workspace_id = azurerm_log_analytics_workspace.aks.id
   }
   
+  
   tags = {
     Environment = var.env
     Name        = var.cluster-name
