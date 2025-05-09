@@ -2,10 +2,10 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "3.75.0"
+      version = "3.65.0"
     }
   }
-
+  
   backend "azurerm" {
     resource_group_name  = "dev-terraform-state-rg"
     storage_account_name = "devterraformstatehari"
@@ -15,7 +15,20 @@ terraform {
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    api_management {
+      purge_soft_delete_on_destroy = true
+    }
+    key_vault {
+      purge_soft_delete_on_destroy = true
+    }
+    resource_group {
+      prevent_deletion_if_contains_resources = false
+    }
+    virtual_machine {
+      delete_os_disk_on_deletion = true
+    }
+  }
   skip_provider_registration = true
 }
 
