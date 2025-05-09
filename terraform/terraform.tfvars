@@ -18,7 +18,7 @@ aks-sg                = "aks-sg"
 
 # AKS
 is-aks-cluster-enabled        = true
-cluster-version               = "1.31"
+cluster-version               = "1.28"
 cluster-name                  = "aks-cluster"
 private-cluster-enabled       = true
 public-network-access-enabled = false
