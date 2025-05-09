@@ -1,11 +1,11 @@
 terraform {
-  required_version = "~> 1.11.4"
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.96.0"
+      version = "3.75.0"
     }
   }
+
   backend "azurerm" {
     resource_group_name  = "dev-terraform-state-rg"
     storage_account_name = "devterraformstatehari"
@@ -16,7 +16,7 @@ terraform {
 
 provider "azurerm" {
   features {}
-  
+  skip_provider_registration = false
 }
 
 module "aks" {
