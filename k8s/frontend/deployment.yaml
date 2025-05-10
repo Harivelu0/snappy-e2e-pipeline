@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: snappy
+  labels:
+    role: frontend
+    env: demo
+spec: 
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  selector:
+    matchLabels: 
+      role: frontend
+  template:
+    metadata:
+      labels:
+        role: frontend
+    spec: 
+      imagePullSecrets:
+      - name: acr-registry-secret
+      containers:
+      - name: frontend
+        image: ACR_H1.azurecr.io/frontend:1
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
