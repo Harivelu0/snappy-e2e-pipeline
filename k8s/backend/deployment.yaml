@@ -27,7 +27,7 @@ spec:
       - name: acr-registry-secret
       containers:
       - name: backend
-        image: ACR_H1.azurecr.io/backend:1
+        image: hpbackend.azurecr.io/backend:1
         imagePullPolicy: Always
         env:
         - name: PORT
