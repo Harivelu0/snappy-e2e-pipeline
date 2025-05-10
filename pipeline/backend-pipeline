@@ -1,0 +1,113 @@
+pipeline {
+    agent any 
+    tools {
+        nodejs 'nodejs'
+    }
+    environment {
+        SCANNER_HOME = tool 'sonar-scanner'
+        ACR_REPO_NAME = credentials('ACR_H1')
+        AZURE_CREDENTIALS = credentials('azure-credentials')
+        AZURE_REGION = 'eastus'
+        REPOSITORY_URI = "${ACR_REPO_NAME}.azurecr.io/"
+    }
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git') {
+            steps {
+                git url: 'https://github.com/Harivelu0/snappy-e2e-pipeline.git', branch: 'main'
+            }
+        }
+        stage('Sonarqube Analysis') {
+            steps {
+                dir('server') {
+                    withSonarQubeEnv('sonar-server') {
+                        sh ''' $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=snappy-backend \
+                        -Dsonar.projectKey=snappy-backend '''
+                    }
+                }
+            }
+        }
+        stage('Quality Check') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            }
+        }
+        stage('OWASP Dependency-Check Scan') {
+            steps {
+                dir('server') {
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-Check'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                }
+            }
+        }
+        stage('Trivy File Scan') {
+            steps {
+                dir('server') {
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+        stage("Docker Image Build") {
+            steps {
+                script {
+                    dir('server') {
+                        sh 'docker system prune -f'
+                        sh 'docker container prune -f'
+                        sh 'docker build -t ${ACR_REPO_NAME}.azurecr.io/backend .'
+                    }
+                }
+            }
+        }
+        stage("ACR Image Pushing") {
+            steps {
+                script {
+                    sh 'az login --service-principal -u $AZURE_CREDENTIALS_CLIENT_ID -p $AZURE_CREDENTIALS_CLIENT_SECRET -t $AZURE_CREDENTIALS_TENANT_ID'
+                    sh 'az acr login --name ${ACR_REPO_NAME}'
+                    sh 'docker tag ${ACR_REPO_NAME}.azurecr.io/backend ${ACR_REPO_NAME}.azurecr.io/backend:${BUILD_NUMBER}'
+                    sh 'docker push ${ACR_REPO_NAME}.azurecr.io/backend:${BUILD_NUMBER}'
+                }
+            }
+        }
+        stage("TRIVY Image Scan") {
+            steps {
+                sh 'trivy image ${ACR_REPO_NAME}.azurecr.io/backend:${BUILD_NUMBER} > trivyimage.txt' 
+            }
+        }
+        stage('Checkout Code') {
+            steps {
+                git url: 'https://github.com/Harivelu0/snappy-e2e-pipeline.git', branch: 'main'
+            }
+        }
+        stage('Update Deployment file') {
+            environment {
+                GIT_REPO_NAME = "snappy-e2e-pipeline"
+                GIT_USER_NAME = "Harivelu0"
+            }
+            steps {
+                dir('k8s/backend') {
+                    withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+                        sh '''
+                            git config user.email "haripriyaveluchamy@gmail.com"
+                            git config user.name "Harivelu0"
+                            BUILD_NUMBER=${BUILD_NUMBER}
+                            echo $BUILD_NUMBER
+                            imageTag=$(grep -oP '(?<=backend:)[^ ]+' deployment.yaml)
+                            echo $imageTag
+                            sed -i "s/${ACR_REPO_NAME}.azurecr.io\\/backend:${imageTag}/${ACR_REPO_NAME}.azurecr.io\\/backend:${BUILD_NUMBER}/" deployment.yaml
+                            git add deployment.yaml
+                            git commit -m "Update backend deployment Image to version \${BUILD_NUMBER}"
+                            git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}

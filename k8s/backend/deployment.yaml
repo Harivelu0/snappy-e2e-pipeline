@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: snappy
+  labels:
+    app: snappy
+    component: backend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: snappy
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: snappy
+        component: backend
+    spec:
+      imagePullSecrets:
+      - name: acr-registry-secret
+      containers:
+      - name: backend
+        image: ACR_H1.azurecr.io/backend:1
+        imagePullPolicy: Always
+        env:
+        - name: PORT
+          value: "5000"
+        - name: MONGO_URL
+          value: "mongodb://mongodb-service:27017/chat"
+        ports:
+        - containerPort: 5000
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "300m"
+            memory: "256Mi"
